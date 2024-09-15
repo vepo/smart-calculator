@@ -12,10 +12,12 @@ import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
+import io.vepo.tutorial.smartcalculator.generated.SmartCalculatorBaseListener;
 import io.vepo.tutorial.smartcalculator.generated.SmartCalculatorLexer;
 import io.vepo.tutorial.smartcalculator.generated.SmartCalculatorParser;
+import io.vepo.tutorial.smartcalculator.generated.SmartCalculatorParser.CommandContext;
 
-public class CalculatorParser implements CalculatorListener {
+public class CalculatorParser implements ExpressionListener {
 
     private AtomicBoolean running;
     private CalculatorMemory memory;
@@ -27,9 +29,10 @@ public class CalculatorParser implements CalculatorListener {
         this.hookpoints = Objects.requireNonNull(hookpoints, "hookpoints cannot be null!");
     }
 
-    public void feed(String content) {
+    public double feed(String content) {
         var tokens = new CommonTokenStream(new SmartCalculatorLexer(CharStreams.fromString(content)));
         var parser = new SmartCalculatorParser(tokens);
+
         parser.setErrorHandler(new DefaultErrorStrategy() {
             @Override
             public void recover(Parser recognizer, RecognitionException e) {
@@ -38,10 +41,18 @@ public class CalculatorParser implements CalculatorListener {
         });
         var walker = new ParseTreeWalker();
         if (content.trim().startsWith("\\")) {
-            walker.walk(new CalculatorTreeListener(this, memory), parser.command());
+            walker.walk(new SmartCalculatorBaseListener() {
+                @Override
+                public void exitCommand(CommandContext ctx) {
+                    onCommand(ctx.COMMAND().getText());
+                }
+            }, parser.command());
         } else {
-            walker.walk(new CalculatorTreeListener(this, memory), parser.expression());
+            CalculatorTreeListener listener = new CalculatorTreeListener(this);
+            walker.walk(listener, parser.start());
+            memory.put(listener.getResult());
         }
+        return memory.current();
     }
 
     public boolean isRunning() {
@@ -73,5 +84,10 @@ public class CalculatorParser implements CalculatorListener {
     @Override
     public void onResult(String expression, double value) {
         hookpoints.onResult(expression, value, memory);
+    }
+
+    @Override
+    public boolean onDivisionByZero(String expression, double quocient, double dividend) {
+        return hookpoints.onDivisionByZero(expression, quocient, dividend, memory);
     }
 }

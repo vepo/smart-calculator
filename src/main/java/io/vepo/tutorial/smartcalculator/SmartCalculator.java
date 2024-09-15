@@ -5,7 +5,6 @@ import static java.lang.System.out;
 
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
 

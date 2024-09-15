@@ -1,9 +1,16 @@
 grammar SmartCalculator;
 
+start: expression;
+
 expression
-    : 
-    '(' expression ')' OPERATOR expression | 
-    NUMBER OPERATOR expression | 
+    :
+    '(' innerExpression=expression ')'
+        expression     (operator=(MOST_IMPORTANT_OPERATOR | LESS_IMPORTANT_OPERATOR)      expression    )+ | 
+    '(' expression ')' (operator=(MOST_IMPORTANT_OPERATOR | LESS_IMPORTANT_OPERATOR)      expression    )+ | 
+    '(' expression ')' (operator=(MOST_IMPORTANT_OPERATOR | LESS_IMPORTANT_OPERATOR) '('  expression ')')+ |  
+        expression     (operator=(MOST_IMPORTANT_OPERATOR | LESS_IMPORTANT_OPERATOR) '('  expression ')')+ | 
+    NUMBER             (operator=(MOST_IMPORTANT_OPERATOR | LESS_IMPORTANT_OPERATOR)      expression    )+ |
+
     NUMBER
     ;
 
@@ -12,9 +19,10 @@ command
     ;
 
 
-OPERATOR: '+' | '-' | '*' | '/';
+MOST_IMPORTANT_OPERATOR: '*' | '/' | '^';
+LESS_IMPORTANT_OPERATOR: '+' | '-';
 
-NUMBER: '-'? INT '.' [0-9]+ EXP? | '-'? INT EXP | '-'? INT;
+NUMBER: INT '.' [0-9]+ EXP? | '-'? INT EXP | '-'? INT;
 COMMAND: [A-Z]+;
 
 fragment HEX: [0-9a-fA-F]+;

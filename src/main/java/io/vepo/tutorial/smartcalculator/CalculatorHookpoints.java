@@ -71,4 +71,10 @@ public class CalculatorHookpoints {
     public void onResult(String expression, double value, CalculatorMemory memory) {
         engine.ifPresent(e -> invokeBooleanFunction((Invocable) e, "onResult", expression, value, memory));
     }
+
+    public boolean onDivisionByZero(String expression, double quocient, double dividend, CalculatorMemory memory) {
+        return engine.map(
+                e -> invokeBooleanFunction((Invocable) e, "onDivisionByZero", expression, quocient, dividend, memory))
+                .orElse(true);
+    }
 }
